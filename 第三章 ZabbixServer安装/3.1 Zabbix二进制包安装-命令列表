@@ -12,44 +12,73 @@ yum install  -y vim
 rpm -ivh https://repo.zabbix.com/zabbix/4.0/rhel/7/x86_64/zabbix-release-4.0-1.el7.noarch.rpm
 
 
-关闭SElinux
+停止firewalld服务
 systemctl stop firewalld.service
 systemctl disable  firewalld.service
 
-vim /etc/selinux/config
+永久关闭SElinux
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+init 6
 
-yum install iptables-services
+注：临时关闭Selinux方法
+setenforce 0
+getenforce 
 
 
 安装Zabbix Server和Frontend
 yum install zabbix-server-mysql
 yum install zabbix-web-mysql
+**技巧：可通过 yum search zabbix 来获取以上安装包的具体名称
 
-
-安装MySQL
+安装Mysql
 yum install mariadb-server
 systemctl  start mariadb.service
 systemctl  status mariadb.service
+
+初始化Mysql
 mysql_secure_installation
+Enter current password for root (enter for none):回车
+Set root password? [Y/n] Y
+New password:
+Re-enter new password:
+Remove anonymous users? [Y/n] y
+ ... Success!
+Disallow root login remotely? [Y/n] y
+ ... Success!
+Remove test database and access to it? [Y/n] y
+ - Dropping test database...
+ ... Success!
+ - Removing privileges on test database...
+ ... Success!
+Reload privilege tables now? [Y/n] y
+ ... Success!
 
 
 创建数据库
 mysql -uroot -p
 create database zabbix character set utf8 collate utf8_bin;
 grant all privileges on zabbix.* to zabbix@localhost identified by 'zabbix@findsec123';
+flush privileges
+quit 
 
 导入数据结构
-zcat /usr/share/doc/zabbix-server-mysql*/create.sql.gz | mysql -uzabbix -pzabbix@findsec123  zabbix
+
+zcat /usr/share/doc/zabbix-server-mysql-4.0.10/create.sql.gz | mysql -uzabbix -pzabbix@findsec123  zabbix
 
 
 配置Zabbix Serve
 vim /etc/zabbix/zabbix_server.conf
+检查以下内容，有#则去除
+DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword=zabbix@findsec123
 
 
 启动Zabbix Server
 systemctl  start zabbix-server.service
 systemctl  status zabbix-server.service
-
+ps -ef | grep zabbix
 more /var/log/zabbix/zabbix_server.log
 
 
@@ -78,6 +107,10 @@ zabbix
 
 安装Zabbix Agent
 yum install zabbix-agent
+Server=127.0.0.1
+ServerActive=127.0.0.1
+Hostname=192.168.1.169
+
 
 systemctl  start zabbix-agent.service
 
