@@ -4,7 +4,7 @@ yum install epel-release
 
 
 安装常用的开发组件和vim
-yum groups install "Development Tools"
+yum  groups install "Development Tools"
 yum groups info  "Development Tools"
 yum install  -y vim 
 
