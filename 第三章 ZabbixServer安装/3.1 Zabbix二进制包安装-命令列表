@@ -3,7 +3,7 @@ wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-
 yum install epel-release
 
 
-安装常用的开发组件和vim
+安装常用的开发组件
 yum  groups install "Development Tools"
 yum groups info  "Development Tools"
 
