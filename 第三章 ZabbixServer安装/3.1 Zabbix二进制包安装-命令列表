@@ -1,10 +1,10 @@
 centos 7 添加阿里云镜像
 wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
-yum install epel-release
+yum install -y  epel-release
 
 
 安装常用的开发组件和vim
-yum  groups install "Development Tools"
+yum  groups install -y "Development Tools"
 yum groups info  "Development Tools"
 yum install  -y vim 
 
@@ -34,6 +34,7 @@ yum install zabbix-web-mysql
 yum install mariadb-server
 systemctl  start mariadb.service
 systemctl  status mariadb.service
+systemctl  enable mariadb.service
 
 初始化Mysql
 mysql_secure_installation
@@ -78,6 +79,7 @@ DBPassword=zabbix@findsec123
 启动Zabbix Server
 systemctl  start zabbix-server.service
 systemctl  status zabbix-server.service
+systemctl  enable zabbix-server.service
 ps -ef | grep zabbix
 more /var/log/zabbix/zabbix_server.log
 
@@ -98,6 +100,8 @@ date.timezone = Asia/Shanghai
 启动httpd
 systemctl  start  httpd.service
 systemctl  status  httpd.service
+systemctl  enable  httpd.service
+
 
 http://10.211.55.7/zabbix/setup.php
 
@@ -113,7 +117,7 @@ Hostname=192.168.1.169
 
 
 systemctl  start zabbix-agent.service
-
+systemctl  enable zabbix-agent.service
 
 
 

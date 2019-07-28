@@ -1,12 +1,14 @@
-下载zabbix server源码包
-wget -O zabbix-4.0.4.tar.gz  https://sourceforge.net/projects/zabbix/files/ZABBIX%20Latest%20Stable/4.0.4/zabbix-4.0.4.tar.gz/download
-
 安装依赖
-yum install wget telnet net-tools python-paramiko gcc gcc-c++ dejavu-sans-fonts python-setuptools python-devel sendmail mailx net-snmp net-snmp-devel net-snmp-utils freetype-devel libpng-devel perl unbound libtasn1-devel p11-kit-devel OpenIPMI unixODBC  libevent-devel  mysql-devel  libxml2-devel  libssh2-devel  OpenIPMI-devel  java-1.8.0-openjdk-devel  openldap-devel  curl-devel unixODBC-devel
+yum install  tree telnet net-tools python-paramiko gcc gcc-c++ dejavu-sans-fonts python-setuptools python-devel sendmail mailx net-snmp net-snmp-devel net-snmp-utils freetype-devel libpng-devel perl unbound libtasn1-devel p11-kit-devel OpenIPMI unixODBC  libevent-devel  mysql-devel  libxml2-devel  libssh2-devel  OpenIPMI-devel  java-1.8.0-openjdk-devel  openldap-devel  curl-devel unixODBC-devel -y
+
+下载zabbix server源码包
+wget -O zabbix-4.2.4.tar.gz  https://sourceforge.net/projects/zabbix/files/ZABBIX%20Latest%20Stable/4.2.4/zabbix-4.2.4.tar.gz/download
 
 解压并编译安装
-tar -zxvf zabbix-4.0.4.tar.gz
-cd  zabbix-4.0.4/
+tar -zxvf zabbix-4.2.4.tar.gz
+
+
+cd  zabbix-4.2.4/
 
 建立编译安装目录
 mkdir -p /data/findsec/zabbix
@@ -14,15 +16,32 @@ mkdir -p /data/findsec/zabbix
 make
 make install
 
-
+测试是否安全成功
 /data/findsec/zabbix/sbin/zabbix_server  -V
 
 
-数据库安装
+数据库安装和初始化
 yum install mariadb-server
 systemctl  start mariadb.service
 systemctl  status mariadb.service
+systemctl  enable mariadb.service
+
 mysql_secure_installation
+Enter current password for root (enter for none):回车
+Set root password? [Y/n] Y
+New password:
+Re-enter new password:
+Remove anonymous users? [Y/n] y
+ ... Success!
+Disallow root login remotely? [Y/n] y
+ ... Success!
+Remove test database and access to it? [Y/n] y
+ - Dropping test database...
+ ... Success!
+ - Removing privileges on test database...
+ ... Success!
+Reload privilege tables now? [Y/n] y
+ ... Success!
 
 创建数据库
 mysql -uroot -p
@@ -30,28 +49,39 @@ create database zabbix character set utf8 collate utf8_bin;
 grant all privileges on zabbix.* to zabbix@localhost identified by 'zabbix@findsec123';
 
 导入数据结构
-mysql -uzabbix -pzabbix@findsec123  zabbix < /root/zabbix-4.0.4/database/mysql/schema.sql 
-mysql -uzabbix -pzabbix@findsec123  zabbix < /root/zabbix-4.0.4/database/mysql/images.sql
-mysql -uzabbix -pzabbix@findsec123  zabbix < /root/zabbix-4.0.4/database/mysql/data.sql 
+mysql -uzabbix -pzabbix@findsec123  zabbix < /root/zabbix-4.2.4/database/mysql/schema.sql 
+mysql -uzabbix -pzabbix@findsec123  zabbix < /root/zabbix-4.2.4/database/mysql/images.sql
+mysql -uzabbix -pzabbix@findsec123  zabbix < /root/zabbix-4.2.4/database/mysql/data.sql 
+mysql -uroot -p
+show databases;
+use zabbix;
+show tables;
+
 
 修改zabbix server配置
 vim /data/findsec/zabbix/etc/zabbix_server.conf
+检查以下内容，有#则去除
+DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword=zabbix@findsec123
 
 增加用户
 groupadd --system zabbix
 useradd --system -g zabbix -d /usr/lib/zabbix -s /sbin/nologin -c "Zabbix Monitoring System" zabbix
 
-启动服务
+启动zabbix_server和agentd服务
 /data/findsec/zabbix/sbin/zabbix_server -c /data/findsec/zabbix/etc/zabbix_server.conf
-
+/data/findsec/zabbix/sbin/zabbix_agentd -c /data/findsec/zabbix/etc/zabbix_agentd.conf
 tailf /tmp/zabbix_server.log
+tailf /tmp/zabbix_agentd.log 
 
 
 增加Zabbix镜像源
-rpm -ivh https://repo.zabbix.com/zabbix/4.0/rhel/7/x86_64/zabbix-release-4.0-1.el7.noarch.rpm
+rpm -ivh http://repo.zabbix.com/zabbix/4.2/rhel/7/x86_64/zabbix-release-4.2-1.el7.noarch.rpm
 
 安装Zabbix Frontend
-yum install zabbix-web-mysql
+yum install -y zabbix-web-mysql
 
 配置Zabbix frontend
 vim /etc/php.ini
@@ -67,16 +97,11 @@ date.timezone = Asia/Shanghai
 
 
 启动httpd
-systemctl  start  httpd.service
+systemctl  start   httpd.service
 systemctl  status  httpd.service
+systemctl  enable  httpd.service 
 
 http://10.211.55.7/zabbix/setup.php
 
 Admin
 zabbix
-
-
-安装Zabbix Agent
-yum install zabbix-agent
-
-systemctl  start zabbix-agent.service
